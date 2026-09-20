@@ -10,6 +10,27 @@ import { FLIP_CONFIG, ACCELEROMETER_UPDATE_INTERVAL_MS } from '../constants/conf
 
 export type FlipEventType = 'haut-vers-bas' | 'bas-vers-haut';
 
+/**
+ * Lissage exponentiel (EMA) : réduit le tremblement dû au bruit de
+ * l'accéléromètre sur l'angle affiché, sans affecter la détection du geste
+ * (qui continue d'utiliser l'angle brut, déjà protégé par le délai de
+ * stabilisation et le filtre de verticalité).
+ */
+const ROTATION_SMOOTHING_FACTOR = 0.2;
+
+/**
+ * Écart le plus court (en degrés, dans (-180, 180]) entre deux angles
+ * « enroulés ». Sert à faire avancer un angle continu (non ramené dans
+ * [-180, 180]) sans le saut brutal qui se produirait au passage de la
+ * frontière ±180°.
+ */
+export function shortestAngleDelta(fromDeg: number, toDeg: number): number {
+  let delta = (toDeg - fromDeg) % 360;
+  if (delta > 180) delta -= 360;
+  if (delta <= -180) delta += 360;
+  return delta;
+}
+
 export interface UseFlipDetectorResult {
   /** Zone instantanée de l'échantillon courant (peut valoir `TRANSITION`). */
   zone: FlipZone;
@@ -21,10 +42,11 @@ export interface UseFlipDetectorResult {
    */
   confirmedZone: 'HAUT' | 'BAS';
   /**
-   * Angle de roulis brut et continu (degrés, `atan2(x, y)`), mis à jour à
-   * chaque échantillon valide. Sert à faire suivre l'orientation réelle du
-   * téléphone à l'illustration (rotation en temps réel), indépendamment des
-   * zones HAUT/BAS/TRANSITION utilisées pour la détection du geste.
+   * Angle de roulis continu (degrés) destiné à l'affichage : lissé (EMA) pour
+   * ne pas trembler avec le bruit du capteur, et « déroulé » (non ramené dans
+   * [-180, 180]) pour ne jamais sauter en passant par ±180°, même en cas de
+   * rotations multiples. La détection du geste, elle, utilise l'angle brut en
+   * interne et n'est pas affectée par ce lissage.
    */
   angleDeg: number;
   notifyPlaybackStarted: (durationMs: number) => void;
@@ -40,6 +62,10 @@ export function useFlipDetector(
   const [zone, setZone] = useState<FlipZone>('HAUT');
   const [confirmedZone, setConfirmedZone] = useState<'HAUT' | 'BAS'>('HAUT');
   const [angleDeg, setAngleDeg] = useState<number>(0);
+  const smoothedXRef = useRef(0);
+  const smoothedYRef = useRef(1);
+  const previousWrappedAngleRef = useRef(0);
+  const unwrappedAngleRef = useRef(0);
 
   useEffect(() => {
     Accelerometer.setUpdateInterval(ACCELEROMETER_UPDATE_INTERVAL_MS);
@@ -66,7 +92,17 @@ export function useFlipDetector(
       machineStateRef.current = nextState;
       setZone(nextState.zone);
       setConfirmedZone(nextState.confirmedZone);
-      setAngleDeg(currentAngleDeg);
+
+      smoothedXRef.current += ROTATION_SMOOTHING_FACTOR * (x - smoothedXRef.current);
+      smoothedYRef.current += ROTATION_SMOOTHING_FACTOR * (y - smoothedYRef.current);
+      const smoothedWrappedAngleDeg =
+        (Math.atan2(smoothedXRef.current, smoothedYRef.current) * 180) / Math.PI;
+      unwrappedAngleRef.current += shortestAngleDelta(
+        previousWrappedAngleRef.current,
+        smoothedWrappedAngleDeg
+      );
+      previousWrappedAngleRef.current = smoothedWrappedAngleDeg;
+      setAngleDeg(unwrappedAngleRef.current);
 
       if (event && timestampMs >= busyUntilMsRef.current) {
         onFlipRef.current(event);

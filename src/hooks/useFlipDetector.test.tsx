@@ -17,7 +17,7 @@ jest.mock('expo-sensors', () => {
 });
 
 import { Accelerometer } from 'expo-sensors';
-import { useFlipDetector } from './useFlipDetector';
+import { useFlipDetector, shortestAngleDelta } from './useFlipDetector';
 
 const emit = (Accelerometer as unknown as { __emit: (d: { x: number; y: number; z: number }) => void }).__emit;
 
@@ -127,22 +127,68 @@ describe('useFlipDetector', () => {
     expect(onFlip).toHaveBeenCalledWith('haut-vers-bas');
   });
 
-  test('expose l’angle brut en continu pour suivre l’orientation en temps réel', async () => {
+  test('expose un angle lissé et continu pour suivre l’orientation en temps réel', async () => {
     const onFlip = jest.fn();
     const { result } = await renderHook(() => useFlipDetector(onFlip));
 
     expect(result.current.angleDeg).toBe(0);
 
-    await act(() => {
-      now = 0;
-      emit({ x: 1, y: 0, z: 0 }); // atan2(1, 0) = 90°
-    });
-    expect(result.current.angleDeg).toBeCloseTo(90);
+    // Le lissage (EMA) évite le tremblement dû au bruit du capteur : l'angle
+    // affiché converge progressivement vers la vraie valeur au lieu de la
+    // suivre au premier échantillon.
+    for (let i = 0; i < 30; i++) {
+      await act(() => {
+        now += 5;
+        emit({ x: 1, y: 0, z: 0 }); // atan2(1, 0) = 90°
+      });
+    }
+    expect(result.current.angleDeg).toBeCloseTo(90, 0);
+    const angleAvantEchantillonFiltre = result.current.angleDeg;
 
     await act(() => {
-      now = 10;
+      now += 10;
       emit(A_PLAT_SAMPLE); // filtré (téléphone à plat) : angle inchangé
     });
-    expect(result.current.angleDeg).toBeCloseTo(90);
+    expect(result.current.angleDeg).toBe(angleAvantEchantillonFiltre);
+  });
+
+  test('ne saute pas en continuant de tourner au-delà de ±180°', async () => {
+    const onFlip = jest.fn();
+    const { result } = await renderHook(() => useFlipDetector(onFlip));
+
+    // Rotation progressive et continue de 0° à 200°, échantillon par
+    // échantillon (le lissage EMA a ainsi le temps de suivre le mouvement
+    // réel au lieu de partir de sa valeur initiale figée).
+    for (let step = 0; step <= 40; step++) {
+      const targetDeg = (step / 40) * 200;
+      const rad = (targetDeg * Math.PI) / 180;
+      await act(() => {
+        now += 5;
+        emit({ x: Math.sin(rad), y: Math.cos(rad), z: 0 });
+      });
+    }
+
+    // Doit avoir continué au-delà de 180° (≈200°), pas être retombé côté
+    // négatif (-160°) comme le ferait un angle simplement « enroulé ».
+    expect(result.current.angleDeg).toBeGreaterThan(150);
+  });
+});
+
+describe('shortestAngleDelta', () => {
+  test('calcule un petit écart direct', () => {
+    expect(shortestAngleDelta(0, 90)).toBeCloseTo(90);
+    expect(shortestAngleDelta(90, 0)).toBeCloseTo(-90);
+  });
+
+  test('continue dans le même sens au passage de la frontière ±180°', () => {
+    // 170° -> -170° : physiquement une poursuite de +20° (170 -> 190 ≡ -170),
+    // jamais un retour en arrière de -340°.
+    expect(shortestAngleDelta(170, -170)).toBeCloseTo(20);
+    expect(shortestAngleDelta(-170, 170)).toBeCloseTo(-20);
+  });
+
+  test('reste nul pour un angle inchangé', () => {
+    expect(shortestAngleDelta(45, 45)).toBeCloseTo(0);
+    expect(shortestAngleDelta(180, -180)).toBeCloseTo(0);
   });
 });

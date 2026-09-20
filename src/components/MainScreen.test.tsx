@@ -18,6 +18,26 @@ const BOTTOM_Y = TEST_WINDOW_HEIGHT - ILLUSTRATION_SIZE - ILLUSTRATION_BOTTOM_MA
 const translateYOf = (element: any): number => element.props.style.transform[0].translateY;
 const rotateOf = (element: any): string => element.props.style.transform[1].rotate;
 
+/**
+ * `Animated.timing` réel utilise `requestAnimationFrame` : même avec
+ * `duration: 0`, la valeur ne se met pas à jour de façon synchrone dans
+ * l'environnement de test. On simule une résolution immédiate pour pouvoir
+ * lire `translateY`/`rotate` juste après un rendu, sans dépendre du minutage
+ * réel de l'animation.
+ */
+function mockInstantAnimatedTiming() {
+  jest.spyOn(Animated, 'timing').mockImplementation((value: any, config: any) => {
+    return {
+      start: (callback?: (result: { finished: boolean }) => void) => {
+        value.setValue(config.toValue);
+        callback?.({ finished: true });
+      },
+      stop: () => {},
+      reset: () => {},
+    } as unknown as Animated.CompositeAnimation;
+  });
+}
+
 describe('MainScreen', () => {
   afterEach(() => {
     jest.restoreAllMocks();
@@ -91,6 +111,7 @@ describe('MainScreen', () => {
   });
 
   test('recale la position de repos sur restZone quand aucune animation n’est en cours', async () => {
+    mockInstantAnimatedTiming();
     const { getByTestId, rerender } = await render(
       <MainScreen
         illustrationSource={dummySource}
@@ -143,7 +164,9 @@ describe('MainScreen', () => {
       />
     );
 
-    // Retournement vers le bas : l'animation démarre.
+    // Retournement vers le bas : l'animation démarre. (`Animated.timing` a
+    // déjà été appelé deux fois au montage : resynchronisation initiale de
+    // `translateY` et lancement de la rotation.)
     await rerender(
       <MainScreen
         illustrationSource={dummySource}
@@ -153,7 +176,7 @@ describe('MainScreen', () => {
         onOpenSettings={() => {}}
       />
     );
-    expect(Animated.timing).toHaveBeenCalledTimes(1);
+    expect(Animated.timing).toHaveBeenCalledTimes(3);
     expect(translateYOf(getByTestId('illustration'))).toBe(BOTTOM_Y);
 
     // Retour en haut pendant le cooldown : aucun flipTrigger (évènement
@@ -167,7 +190,7 @@ describe('MainScreen', () => {
         onOpenSettings={() => {}}
       />
     );
-    expect(Animated.timing).toHaveBeenCalledTimes(1);
+    expect(Animated.timing).toHaveBeenCalledTimes(3);
     expect(translateYOf(getByTestId('illustration'))).toBe(BOTTOM_Y);
 
     // Fin de l'animation : l'illustration rattrape l'orientation physique.
@@ -178,6 +201,19 @@ describe('MainScreen', () => {
   });
 
   test('fait tourner l’illustration en temps réel selon angleDeg', async () => {
+    // `Animated.timing` est simulé pour que la rotation atteigne sa cible
+    // immédiatement, indépendamment de la durée réelle de l'animation.
+    jest.spyOn(Animated, 'timing').mockImplementation((value: any, config: any) => {
+      return {
+        start: (callback?: (result: { finished: boolean }) => void) => {
+          value.setValue(config.toValue);
+          callback?.({ finished: true });
+        },
+        stop: () => {},
+        reset: () => {},
+      } as unknown as Animated.CompositeAnimation;
+    });
+
     const { getByTestId, rerender } = await render(
       <MainScreen
         illustrationSource={dummySource}
@@ -199,8 +235,8 @@ describe('MainScreen', () => {
       />
     );
 
-    // La rotation compense l'angle du téléphone (signe opposé) pour que
-    // l'illustration reste dans le bon sens pour la personne qui regarde.
-    expect(rotateOf(getByTestId('illustration'))).toBe('-90deg');
+    // Vérifié empiriquement sur device réel : l'illustration doit tourner
+    // dans le même sens que l'angle mesuré (pas de compensation de signe).
+    expect(rotateOf(getByTestId('illustration'))).toBe('90deg');
   });
 });
