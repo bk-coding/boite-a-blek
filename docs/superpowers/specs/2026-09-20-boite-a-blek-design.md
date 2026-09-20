@@ -102,10 +102,12 @@ Règles :
    laps de temps sont ignorées (pas de mise en file d'attente).
 
 Le hook expose :
-- L'état courant (`HAUT` / `BAS` / `TRANSITION`) et l'angle brut, pour
-  piloter l'animation de l'illustration en continu (pas seulement au
-  moment du déclenchement).
-- Un évènement de déclenchement (`onFlip: 'haut-vers-bas' | 'bas-vers-haut'`).
+- L'état courant (`HAUT` / `BAS` / `TRANSITION`), utilisé pour l'affichage
+  initial (position de repos de l'illustration) mais pas pour l'animation
+  de transition elle-même (voir §5).
+- Un évènement de déclenchement (`onFlip: 'haut-vers-bas' | 'bas-vers-haut'`),
+  qui démarre à la fois la lecture du son et l'animation de l'illustration
+  — les deux sont synchronisés sur la même durée (voir §5 et §6).
 
 ## 4. Structure du projet
 
@@ -142,10 +144,15 @@ boite-a-blek/
 ## 5. Écrans et composants
 
 ### Écran principal (`MainScreen`)
-- Illustration positionnée via `Animated.Value`, interpolée en continu à
-  partir de l'angle mesuré par `useFlipDetector` (translation verticale
-  fluide entre la position « haut » et la position « bas », pas un simple
-  saut au moment du déclenchement).
+- Illustration positionnée via `Animated.Value` avec deux positions de
+  repos : « haut » et « bas ».
+- Au repos (aucune transition en cours), l'illustration reste figée sur la
+  position correspondant à l'état courant (`HAUT` ou `BAS`).
+- Lors d'un déclenchement (`onFlip`), l'illustration glisse de sa position
+  actuelle vers la position opposée via `Animated.timing`, avec une
+  **durée égale à la durée totale du fichier audio joué** (la même valeur
+  que le cooldown défini en §3) — le glissement visuel et le son doivent
+  se terminer en même temps, tous deux démarrés au même instant.
 - Icône de roue dentée (coin supérieur, `@expo/vector-icons`) ouvrant la
   modale de paramètres.
 
@@ -170,7 +177,11 @@ boite-a-blek/
 ## 6. Audio et haptique
 
 - Librairie `expo-av` pour la lecture (chargement des deux sons au
-  démarrage pour éviter toute latence au déclenchement).
+  démarrage pour éviter toute latence au déclenchement). La durée de
+  chaque son est lue une fois au chargement (`status.durationMillis`) et
+  mise en cache : c'est cette valeur qui pilote à la fois le cooldown
+  (§3) et la durée de l'animation de l'illustration (§5), pour chaque
+  son indépendamment (les deux sons peuvent avoir des durées différentes).
 - Configuration audio (`Audio.setAudioModeAsync`) avec
   `playsInSilentModeIOS: true` : le son doit toujours jouer, même si le
   switch silencieux iOS est activé (comportement « jouet », pas
