@@ -200,19 +200,11 @@ describe('MainScreen', () => {
     expect(translateYOf(getByTestId('illustration'))).toBe(TOP_Y);
   });
 
-  test('fait tourner l’illustration en temps réel selon angleDeg', async () => {
-    // `Animated.timing` est simulé pour que la rotation atteigne sa cible
-    // immédiatement, indépendamment de la durée réelle de l'animation.
-    jest.spyOn(Animated, 'timing').mockImplementation((value: any, config: any) => {
-      return {
-        start: (callback?: (result: { finished: boolean }) => void) => {
-          value.setValue(config.toValue);
-          callback?.({ finished: true });
-        },
-        stop: () => {},
-        reset: () => {},
-      } as unknown as Animated.CompositeAnimation;
-    });
+  test('fait tourner l’illustration en temps réel selon angleDeg, décalée de 180°', async () => {
+    // L'illustration est dessinée à l'envers par rapport à l'angle 0 calculé
+    // (constaté sur device réel) : un décalage constant de 180° est ajouté
+    // avant l'interpolation, quel que soit `angleDeg`.
+    mockInstantAnimatedTiming();
 
     const { getByTestId, rerender } = await render(
       <MainScreen
@@ -223,7 +215,7 @@ describe('MainScreen', () => {
         onOpenSettings={() => {}}
       />
     );
-    expect(rotateOf(getByTestId('illustration'))).toBe('0deg');
+    expect(rotateOf(getByTestId('illustration'))).toBe('180deg');
 
     await rerender(
       <MainScreen
@@ -236,7 +228,8 @@ describe('MainScreen', () => {
     );
 
     // Vérifié empiriquement sur device réel : l'illustration doit tourner
-    // dans le même sens que l'angle mesuré (pas de compensation de signe).
-    expect(rotateOf(getByTestId('illustration'))).toBe('90deg');
+    // dans le même sens que l'angle mesuré (pas de compensation de signe),
+    // avec le décalage constant de 180° toujours appliqué.
+    expect(rotateOf(getByTestId('illustration'))).toBe('270deg');
   });
 });

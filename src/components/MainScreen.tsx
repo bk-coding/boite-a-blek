@@ -119,7 +119,12 @@ export function MainScreen({
     // capteur, en linéaire, donne une rotation continue et fluide plutôt
     // qu'un saut brutal à chaque échantillon.
     Animated.timing(rotate, {
-      toValue: angleDeg,
+      // +180° : l'illustration est dessinée à l'envers par rapport à
+      // l'angle 0 tel que calculé (constaté sur device réel, identique sur
+      // iOS et Android une fois la correction plateforme du capteur faite
+      // dans useFlipDetector). Un simple décalage constant, indépendant de
+      // la plateforme.
+      toValue: angleDeg + 180,
       duration: ACCELEROMETER_UPDATE_INTERVAL_MS,
       easing: Easing.linear,
       useNativeDriver: true,

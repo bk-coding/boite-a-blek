@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 import {
   createInitialFlipState,
@@ -29,6 +30,24 @@ export function shortestAngleDelta(fromDeg: number, toDeg: number): number {
   if (delta > 180) delta -= 360;
   if (delta <= -180) delta += 360;
   return delta;
+}
+
+/**
+ * Correction empirique constatée sur device réel : pour une même orientation
+ * physique, l'accéléromètre Android rapporte l'axe x/y (et probablement z,
+ * par cohérence) avec un signe inversé par rapport à iOS — comme si l'un
+ * mesurait l'accélération et l'autre la force spécifique (son opposée).
+ * Sans cette correction, ce que le code classe comme HAUT/BAS sur Android
+ * correspond en réalité à l'inverse physique, d'où un son et un glissement
+ * d'illustration inversés constatés sur ce système. On l'applique au vecteur
+ * brut, avant tout calcul, pour que la machine à états et le lissage de
+ * l'angle affiché en héritent tous les deux de façon cohérente.
+ *
+ * Lue à chaque échantillon (pas figée au chargement du module) : plus
+ * simple à couvrir par un test qui bascule `Platform.OS` en cours de route.
+ */
+function getPlatformSignCorrection(): 1 | -1 {
+  return Platform.OS === 'android' ? -1 : 1;
 }
 
 export interface UseFlipDetectorResult {
@@ -69,7 +88,12 @@ export function useFlipDetector(
 
   useEffect(() => {
     Accelerometer.setUpdateInterval(ACCELEROMETER_UPDATE_INTERVAL_MS);
-    const subscription = Accelerometer.addListener(({ x, y, z }) => {
+    const subscription = Accelerometer.addListener((rawSample) => {
+      const signCorrection = getPlatformSignCorrection();
+      const x = rawSample.x * signCorrection;
+      const y = rawSample.y * signCorrection;
+      const z = rawSample.z * signCorrection;
+
       // Filtre de verticalité (spec §3) : un téléphone posé à plat ou trop
       // penché produirait un angle x/y purement bruité, susceptible de se
       // « stabiliser » en BAS et de déclencher un son fantôme. On ignore
