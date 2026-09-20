@@ -23,8 +23,11 @@ export default function App() {
     soundPlayerRef.current.loadAll().catch((error) => {
       console.warn('Chargement des sons impossible, l’app reste utilisable sans son :', error);
     });
+    const soundPlayer = soundPlayerRef.current;
     return () => {
-      soundPlayerRef.current.unloadAll();
+      soundPlayer.unloadAll().catch((error) => {
+        console.warn('Libération des sons impossible :', error);
+      });
     };
   }, []);
 
@@ -45,7 +48,11 @@ export default function App() {
       });
     }
     if (currentSettings.vibrationActive) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      // Rejette sur les appareils dépourvus de moteur haptique : on dégrade
+      // silencieusement plutôt que de laisser une promesse non gérée.
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch((error) => {
+        console.warn('Retour haptique indisponible :', error);
+      });
     }
   }, []);
 
