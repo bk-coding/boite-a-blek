@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, act, waitFor } from '@testing-library/react-native';
+import { render, act, fireEvent, waitFor } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -16,23 +16,22 @@ jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: { Medium: 'medium' },
 }));
 
-jest.mock('expo-av', () => {
-  const mockSound = {
-    setVolumeAsync: jest.fn(() => Promise.resolve()),
-    setPositionAsync: jest.fn(() => Promise.resolve()),
-    playAsync: jest.fn(() => Promise.resolve()),
-    unloadAsync: jest.fn(() => Promise.resolve()),
+// `expo-audio` (SDK 57) remplace `expo-av` : un `AudioPlayer` par source,
+// durée exprimée en secondes (0,6 s = 600 ms de cooldown/animation).
+jest.mock('expo-audio', () => {
+  const mockPlayer = {
+    isLoaded: true,
+    duration: 0.6,
+    volume: 1,
+    play: jest.fn(),
+    seekTo: jest.fn(() => Promise.resolve()),
+    remove: jest.fn(),
+    addListener: jest.fn(() => ({ remove: jest.fn() })),
   };
   return {
-    Audio: {
-      setAudioModeAsync: jest.fn(() => Promise.resolve()),
-      Sound: {
-        createAsync: jest.fn(() =>
-          Promise.resolve({ sound: mockSound, status: { isLoaded: true, durationMillis: 600 } })
-        ),
-      },
-      __mockSound: mockSound,
-    },
+    setAudioModeAsync: jest.fn(() => Promise.resolve()),
+    createAudioPlayer: jest.fn(() => mockPlayer),
+    __mockPlayer: mockPlayer,
   };
 });
 
@@ -53,11 +52,14 @@ jest.mock('expo-sensors', () => {
 });
 
 import { Accelerometer } from 'expo-sensors';
-import { Audio } from 'expo-av';
+import * as ExpoAudio from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import App from './App';
 
 const emit = (Accelerometer as unknown as { __emit: (d: { x: number; y: number; z: number }) => void }).__emit;
+const createAudioPlayer = ExpoAudio.createAudioPlayer as unknown as jest.Mock;
+const mockPlayer = (ExpoAudio as unknown as { __mockPlayer: any }).__mockPlayer;
+
 const HAUT_SAMPLE = { x: 0, y: 1, z: 0 };
 const BAS_SAMPLE = { x: 0, y: -1, z: 0 };
 
@@ -69,6 +71,7 @@ describe('App', () => {
     jest.spyOn(Date, 'now').mockImplementation(() => now);
     await AsyncStorage.clear();
     jest.clearAllMocks();
+    createAudioPlayer.mockImplementation(() => mockPlayer);
   });
 
   afterEach(() => {
@@ -77,9 +80,7 @@ describe('App', () => {
 
   test('joue le son et vibre sur un flip haut-vers-bas', async () => {
     await render(<App />);
-    await waitFor(() => expect(Audio.Sound.createAsync).toHaveBeenCalledTimes(2));
-
-    const mockSound = (Audio as unknown as { __mockSound: any }).__mockSound;
+    await waitFor(() => expect(createAudioPlayer).toHaveBeenCalledTimes(2));
 
     await act(async () => {
       now = 0;
@@ -88,20 +89,18 @@ describe('App', () => {
       emit(BAS_SAMPLE);
     });
 
-    await waitFor(() => expect(mockSound.playAsync).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockPlayer.play).toHaveBeenCalledTimes(1));
     expect(Haptics.impactAsync).toHaveBeenCalledTimes(1);
   });
 
-  test('ne joue pas le son bas-vers-haut si désactivé, mais vibre quand même', async () => {
+  test('ne joue pas le son bas-vers-haut si désactivé, mais vibre quand même et garde le cooldown réel', async () => {
     await AsyncStorage.setItem(
       '@boite-a-blek/settings',
       JSON.stringify({ sonBasVersHautActif: false, volume: 1, vibrationActive: true })
     );
 
     await render(<App />);
-    await waitFor(() => expect(Audio.Sound.createAsync).toHaveBeenCalledTimes(2));
-
-    const mockSound = (Audio as unknown as { __mockSound: any }).__mockSound;
+    await waitFor(() => expect(createAudioPlayer).toHaveBeenCalledTimes(2));
 
     // haut-vers-bas d'abord (toujours actif)
     await act(async () => {
@@ -110,9 +109,9 @@ describe('App', () => {
       now = 130;
       emit(BAS_SAMPLE);
     });
-    await waitFor(() => expect(mockSound.playAsync).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockPlayer.play).toHaveBeenCalledTimes(1));
 
-    // puis bas-vers-haut (désactivé)
+    // puis bas-vers-haut (désactivé) — confirmé à t=930, cooldown jusqu'à 1530
     await act(async () => {
       now = 800;
       emit(HAUT_SAMPLE);
@@ -121,6 +120,64 @@ describe('App', () => {
     });
 
     await waitFor(() => expect(Haptics.impactAsync).toHaveBeenCalledTimes(2));
-    expect(mockSound.playAsync).toHaveBeenCalledTimes(1); // pas de second appel
+    expect(mockPlayer.play).toHaveBeenCalledTimes(1); // pas de second appel
+
+    // Le son n'a pas été joué, mais le cooldown doit malgré tout avoir été
+    // armé sur la durée RÉELLE du média (600 ms) : une transition confirmée
+    // à t=1130, soit avant 930+600, doit encore être supprimée.
+    await act(async () => {
+      now = 1000;
+      emit(BAS_SAMPLE);
+      now = 1130;
+      emit(BAS_SAMPLE);
+    });
+    expect(mockPlayer.play).toHaveBeenCalledTimes(1);
+    expect(Haptics.impactAsync).toHaveBeenCalledTimes(2);
+
+    // Une fois les 600 ms écoulées, les déclenchements repartent.
+    await act(async () => {
+      now = 1600;
+      emit(HAUT_SAMPLE);
+      now = 1730;
+      emit(HAUT_SAMPLE); // bas-vers-haut accepté (1730 >= 1530), son désactivé
+    });
+    await waitFor(() => expect(Haptics.impactAsync).toHaveBeenCalledTimes(3));
+
+    await act(async () => {
+      now = 2400;
+      emit(BAS_SAMPLE);
+      now = 2530;
+      emit(BAS_SAMPLE); // haut-vers-bas accepté (2530 >= 1730+600)
+    });
+    await waitFor(() => expect(mockPlayer.play).toHaveBeenCalledTimes(2));
+  });
+
+  test('reste utilisable si le chargement des sons échoue', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    createAudioPlayer.mockImplementation(() => {
+      throw new Error('moteur audio indisponible');
+    });
+
+    const { getByTestId, queryByTestId } = await render(<App />);
+
+    await waitFor(() => expect(warnSpy).toHaveBeenCalled());
+
+    // L'écran principal s'affiche malgré l'absence de son.
+    expect(getByTestId('main-screen')).toBeTruthy();
+
+    // La modale de paramètres reste ouvrable.
+    expect(queryByTestId('switch-vibration')).toBeNull();
+    fireEvent.press(getByTestId('settings-button'));
+    await waitFor(() => expect(queryByTestId('switch-vibration')).not.toBeNull());
+
+    // La vibration fonctionne toujours sur un retournement.
+    await act(async () => {
+      now = 0;
+      emit(BAS_SAMPLE);
+      now = 130;
+      emit(BAS_SAMPLE);
+    });
+    await waitFor(() => expect(Haptics.impactAsync).toHaveBeenCalledTimes(1));
+    expect(mockPlayer.play).not.toHaveBeenCalled();
   });
 });
