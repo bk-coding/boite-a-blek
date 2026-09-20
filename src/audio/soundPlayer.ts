@@ -1,10 +1,20 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+import { BAS_VERS_HAUT_SOUNDS } from './soundManifest';
 
-export type SoundKey = 'hautVersBas' | 'basVersHaut';
+/**
+ * Clé du son fixe « haut vers bas », toujours actif. Les clés des sons
+ * sélectionnables pour « bas vers haut » viennent de `soundManifest.ts`
+ * (généré par `scripts/generate-sound-manifest.js` à partir du contenu de
+ * `assets/sounds/`) — `SoundKey` reste donc une simple chaîne plutôt qu'une
+ * union figée, puisque l'ensemble des clés possibles peut grandir sans
+ * modification de ce fichier.
+ */
+export const HAUT_VERS_BAS_KEY = 'hautVersBas';
+export type SoundKey = string;
 
 const SOUND_SOURCES: Record<SoundKey, number> = {
-  hautVersBas: require('../../assets/sounds/blek.m4a'),
-  basVersHaut: require('../../assets/sounds/10-minutes.m4a'),
+  [HAUT_VERS_BAS_KEY]: require('../../assets/sounds/blek.m4a'),
+  ...Object.fromEntries(BAS_VERS_HAUT_SOUNDS.map((sound) => [sound.key, sound.source])),
 };
 
 /**

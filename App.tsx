@@ -5,7 +5,7 @@ import { MainScreen, FlipAnimationTrigger } from './src/components/MainScreen';
 import { SettingsModal } from './src/components/SettingsModal';
 import { useFlipDetector, FlipEventType } from './src/hooks/useFlipDetector';
 import { useSettings } from './src/hooks/useSettings';
-import { createSoundPlayer, SoundKey } from './src/audio/soundPlayer';
+import { createSoundPlayer, HAUT_VERS_BAS_KEY } from './src/audio/soundPlayer';
 
 const illustrationSource = require('./assets/images/illustration.png');
 
@@ -33,16 +33,24 @@ export default function App() {
 
   const handleFlip = useCallback((event: FlipEventType) => {
     const currentSettings = settingsRef.current;
-    const soundKey: SoundKey = event === 'haut-vers-bas' ? 'hautVersBas' : 'basVersHaut';
-    const shouldPlaySound = event === 'haut-vers-bas' || currentSettings.sonBasVersHautActif;
-    const toZone: 'HAUT' | 'BAS' = event === 'haut-vers-bas' ? 'BAS' : 'HAUT';
-    const durationMs = soundPlayerRef.current.getDurationMs(soundKey);
+    const isHautVersBas = event === 'haut-vers-bas';
+    const toZone: 'HAUT' | 'BAS' = isHautVersBas ? 'BAS' : 'HAUT';
+    // « bas vers haut » n'a plus d'interrupteur on/off : le son joué (s'il y
+    // en a un) est celui choisi dans les paramètres, `null` valant « Aucun ».
+    const soundKey = isHautVersBas ? HAUT_VERS_BAS_KEY : currentSettings.basVersHautSoundKey;
+    // Quand « Aucun » est sélectionné, il n'existe plus de fichier de
+    // référence pour le rythme visuel/le cooldown — on retombe sur la durée
+    // du son haut-vers-bas (toujours chargé) pour garder un anti-rebond
+    // cohérent plutôt que de le désactiver (durée nulle).
+    const durationMs = soundKey
+      ? soundPlayerRef.current.getDurationMs(soundKey)
+      : soundPlayerRef.current.getDurationMs(HAUT_VERS_BAS_KEY);
 
     triggerIdRef.current += 1;
     setFlipTrigger({ id: triggerIdRef.current, toZone, durationMs });
     notifyPlaybackStartedRef.current(durationMs);
 
-    if (shouldPlaySound) {
+    if (soundKey) {
       soundPlayerRef.current.play(soundKey, currentSettings.volume).catch((error) => {
         console.warn('Lecture du son impossible :', error);
       });

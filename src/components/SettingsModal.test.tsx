@@ -20,7 +20,7 @@ jest.mock('@react-native-community/slider', () => {
 // Promise so effects are flushed on the RN test renderer). Every call below
 // is awaited for that reason; the rest of the brief's test code is unchanged.
 describe('SettingsModal', () => {
-  test('bascule le son bas-vers-haut', async () => {
+  test('sélectionne un son pour le retour en position haute', async () => {
     const onChangeSettings = jest.fn();
     const { getByTestId } = await render(
       <SettingsModal
@@ -31,9 +31,39 @@ describe('SettingsModal', () => {
       />
     );
 
-    fireEvent(getByTestId('switch-son-bas-vers-haut'), 'valueChange', false);
+    fireEvent.press(getByTestId('sound-option-10-minutes'));
 
-    expect(onChangeSettings).toHaveBeenCalledWith({ sonBasVersHautActif: false });
+    expect(onChangeSettings).toHaveBeenCalledWith({ basVersHautSoundKey: '10-minutes' });
+  });
+
+  test('« Aucun » repasse le réglage à null', async () => {
+    const onChangeSettings = jest.fn();
+    const { getByTestId } = await render(
+      <SettingsModal
+        visible
+        settings={{ ...DEFAULT_SETTINGS, basVersHautSoundKey: '10-minutes' }}
+        onChangeSettings={onChangeSettings}
+        onClose={() => {}}
+      />
+    );
+
+    fireEvent.press(getByTestId('sound-option-none'));
+
+    expect(onChangeSettings).toHaveBeenCalledWith({ basVersHautSoundKey: null });
+  });
+
+  test('coche l’option actuellement sélectionnée, et une seule', async () => {
+    const { getByTestId, queryByTestId } = await render(
+      <SettingsModal
+        visible
+        settings={{ ...DEFAULT_SETTINGS, basVersHautSoundKey: '10-minutes' }}
+        onChangeSettings={() => {}}
+        onClose={() => {}}
+      />
+    );
+
+    expect(getByTestId('sound-option-10-minutes-check')).toBeTruthy();
+    expect(queryByTestId('sound-option-none-check')).toBeNull();
   });
 
   test('bascule la vibration', async () => {

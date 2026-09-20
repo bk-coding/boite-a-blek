@@ -2,13 +2,18 @@ import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Settings {
-  sonBasVersHautActif: boolean;
+  /**
+   * Clé (voir `BAS_VERS_HAUT_SOUNDS` dans `src/audio/soundManifest.ts`) du
+   * son choisi pour le retour en position haute, ou `null` pour « Aucun ».
+   * Remplace l'ancien interrupteur booléen `sonBasVersHautActif`.
+   */
+  basVersHautSoundKey: string | null;
   volume: number;
   vibrationActive: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  sonBasVersHautActif: true,
+  basVersHautSoundKey: null,
   volume: 1,
   vibrationActive: true,
 };

@@ -19,7 +19,11 @@ jest.mock('expo-audio', () => {
 });
 
 import * as ExpoAudio from 'expo-audio';
-import { createSoundPlayer } from './soundPlayer';
+import { createSoundPlayer, HAUT_VERS_BAS_KEY } from './soundPlayer';
+
+// Clé du seul son présent dans src/audio/soundManifest.ts au moment
+// d'écrire ces tests (généré depuis assets/sounds/, blek.m4a exclu).
+const BAS_VERS_HAUT_KEY = '10-minutes';
 
 const { setAudioModeAsync, createAudioPlayer } = ExpoAudio;
 const mockPlayer = (ExpoAudio as unknown as { __mockPlayer: any }).__mockPlayer;
@@ -42,8 +46,8 @@ describe('soundPlayer', () => {
     expect(createAudioPlayer).toHaveBeenCalledTimes(2);
     // 0,65 s → 650 ms : la conversion secondes → millisecondes est la
     // différence de contrat majeure entre expo-av et expo-audio.
-    expect(player.getDurationMs('hautVersBas')).toBe(650);
-    expect(player.getDurationMs('basVersHaut')).toBe(650);
+    expect(player.getDurationMs(HAUT_VERS_BAS_KEY)).toBe(650);
+    expect(player.getDurationMs(BAS_VERS_HAUT_KEY)).toBe(650);
   });
 
   test('loadAll attend le chargement asynchrone avant de mettre la durée en cache', async () => {
@@ -60,21 +64,21 @@ describe('soundPlayer', () => {
 
     // Tant que le lecteur n'a pas signalé `isLoaded`, rien n'est mis en cache.
     await new Promise<void>((resolve) => setImmediate(resolve));
-    expect(player.getDurationMs('hautVersBas')).toBe(0);
+    expect(player.getDurationMs(HAUT_VERS_BAS_KEY)).toBe(0);
     expect(listeners).toHaveLength(2);
 
     listeners.forEach((cb) => cb({ isLoaded: true, duration: 1.2, error: null }));
     await loading;
 
-    expect(player.getDurationMs('hautVersBas')).toBe(1200);
-    expect(player.getDurationMs('basVersHaut')).toBe(1200);
+    expect(player.getDurationMs(HAUT_VERS_BAS_KEY)).toBe(1200);
+    expect(player.getDurationMs(BAS_VERS_HAUT_KEY)).toBe(1200);
   });
 
   test('play règle le volume et lance la lecture depuis le début', async () => {
     const player = createSoundPlayer();
     await player.loadAll();
 
-    await player.play('hautVersBas', 0.75);
+    await player.play(HAUT_VERS_BAS_KEY, 0.75);
 
     expect(mockPlayer.volume).toBe(0.75);
     expect(mockPlayer.seekTo).toHaveBeenCalledWith(0);
@@ -83,7 +87,7 @@ describe('soundPlayer', () => {
 
   test('play rejette si le son demandé n’a pas été chargé', async () => {
     const player = createSoundPlayer();
-    await expect(player.play('hautVersBas', 1)).rejects.toThrow('Son non chargé');
+    await expect(player.play(HAUT_VERS_BAS_KEY, 1)).rejects.toThrow('Son non chargé');
   });
 
   test('unloadAll libère les lecteurs natifs', async () => {
@@ -93,7 +97,7 @@ describe('soundPlayer', () => {
     await player.unloadAll();
 
     expect(mockPlayer.remove).toHaveBeenCalledTimes(2);
-    expect(player.getDurationMs('hautVersBas')).toBe(0);
-    await expect(player.play('hautVersBas', 1)).rejects.toThrow('Son non chargé');
+    expect(player.getDurationMs(HAUT_VERS_BAS_KEY)).toBe(0);
+    await expect(player.play(HAUT_VERS_BAS_KEY, 1)).rejects.toThrow('Son non chargé');
   });
 });

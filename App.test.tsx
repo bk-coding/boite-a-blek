@@ -93,10 +93,10 @@ describe('App', () => {
     expect(Haptics.impactAsync).toHaveBeenCalledTimes(1);
   });
 
-  test('ne joue pas le son bas-vers-haut si désactivé, mais vibre quand même et garde le cooldown réel', async () => {
+  test('ne joue pas de son bas-vers-haut si « Aucun » est sélectionné, mais vibre quand même et garde le cooldown réel', async () => {
     await AsyncStorage.setItem(
       '@boite-a-blek/settings',
-      JSON.stringify({ sonBasVersHautActif: false, volume: 1, vibrationActive: true })
+      JSON.stringify({ basVersHautSoundKey: null, volume: 1, vibrationActive: true })
     );
 
     await render(<App />);
@@ -111,7 +111,7 @@ describe('App', () => {
     });
     await waitFor(() => expect(mockPlayer.play).toHaveBeenCalledTimes(1));
 
-    // puis bas-vers-haut (désactivé) — confirmé à t=930, cooldown jusqu'à 1530
+    // puis bas-vers-haut (« Aucun ») — confirmé à t=930, cooldown jusqu'à 1530
     await act(async () => {
       now = 800;
       emit(HAUT_SAMPLE);
@@ -139,7 +139,7 @@ describe('App', () => {
       now = 1600;
       emit(HAUT_SAMPLE);
       now = 1730;
-      emit(HAUT_SAMPLE); // bas-vers-haut accepté (1730 >= 1530), son désactivé
+      emit(HAUT_SAMPLE); // bas-vers-haut accepté (1730 >= 1530), toujours « Aucun »
     });
     await waitFor(() => expect(Haptics.impactAsync).toHaveBeenCalledTimes(3));
 
@@ -148,6 +148,34 @@ describe('App', () => {
       emit(BAS_SAMPLE);
       now = 2530;
       emit(BAS_SAMPLE); // haut-vers-bas accepté (2530 >= 1730+600)
+    });
+    await waitFor(() => expect(mockPlayer.play).toHaveBeenCalledTimes(2));
+  });
+
+  test('joue le son bas-vers-haut sélectionné dans les paramètres', async () => {
+    await AsyncStorage.setItem(
+      '@boite-a-blek/settings',
+      JSON.stringify({ basVersHautSoundKey: '10-minutes', volume: 1, vibrationActive: true })
+    );
+
+    await render(<App />);
+    // 2 lecteurs : hautVersBas (blek.m4a) + le son du manifeste bas-vers-haut
+    // (10-minutes.m4a, seul disponible ici).
+    await waitFor(() => expect(createAudioPlayer).toHaveBeenCalledTimes(2));
+
+    await act(async () => {
+      now = 0;
+      emit(BAS_SAMPLE);
+      now = 130;
+      emit(BAS_SAMPLE);
+    });
+    await waitFor(() => expect(mockPlayer.play).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      now = 800;
+      emit(HAUT_SAMPLE);
+      now = 930;
+      emit(HAUT_SAMPLE);
     });
     await waitFor(() => expect(mockPlayer.play).toHaveBeenCalledTimes(2));
   });

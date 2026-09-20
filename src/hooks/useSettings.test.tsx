@@ -27,13 +27,13 @@ describe('useSettings', () => {
     await waitFor(() => expect(result.current.isLoaded).toBe(true));
 
     await act(() => {
-      result.current.updateSettings({ sonBasVersHautActif: false, volume: 0.4 });
+      result.current.updateSettings({ basVersHautSoundKey: '10-minutes', volume: 0.4 });
     });
 
     await waitFor(() =>
       expect(result.current.settings).toEqual({
         ...DEFAULT_SETTINGS,
-        sonBasVersHautActif: false,
+        basVersHautSoundKey: '10-minutes',
         volume: 0.4,
       })
     );
@@ -46,9 +46,25 @@ describe('useSettings', () => {
     await waitFor(() => expect(secondResult.current.isLoaded).toBe(true));
     expect(secondResult.current.settings).toEqual({
       ...DEFAULT_SETTINGS,
-      sonBasVersHautActif: false,
+      basVersHautSoundKey: '10-minutes',
       volume: 0.4,
     });
+  });
+
+  test('ignore l’ancien réglage booléen (sonBasVersHautActif) et retombe sur « Aucun »', async () => {
+    // Migration depuis l'ancien schéma (interrupteur on/off) : un testeur
+    // ayant déjà l'app installée avec `sonBasVersHautActif: true` en
+    // stockage doit démarrer avec le nouveau sélecteur sur « Aucun »
+    // (basVersHautSoundKey: null), pas avec un son présélectionné.
+    await AsyncStorage.setItem(
+      '@boite-a-blek/settings',
+      JSON.stringify({ sonBasVersHautActif: true, volume: 1, vibrationActive: true })
+    );
+
+    const { result } = await renderHook(() => useSettings());
+    await waitFor(() => expect(result.current.isLoaded).toBe(true));
+
+    expect(result.current.settings.basVersHautSoundKey).toBeNull();
   });
 
   test('passe isLoaded à true avec les valeurs par défaut si le chargement échoue', async () => {
