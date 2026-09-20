@@ -1,20 +1,76 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { MainScreen, FlipAnimationTrigger } from './src/components/MainScreen';
+import { SettingsModal } from './src/components/SettingsModal';
+import { useFlipDetector, FlipEventType } from './src/hooks/useFlipDetector';
+import { useSettings } from './src/hooks/useSettings';
+import { createSoundPlayer, SoundKey } from './src/audio/soundPlayer';
+
+const illustrationSource = require('./assets/images/illustration.png');
 
 export default function App() {
+  const { settings, isLoaded, updateSettings } = useSettings();
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [flipTrigger, setFlipTrigger] = useState<FlipAnimationTrigger | null>(null);
+  const soundPlayerRef = useRef(createSoundPlayer());
+  const triggerIdRef = useRef(0);
+  const settingsRef = useRef(settings);
+  const notifyPlaybackStartedRef = useRef<(durationMs: number) => void>(() => {});
+  settingsRef.current = settings;
+
+  useEffect(() => {
+    soundPlayerRef.current.loadAll().catch((error) => {
+      console.warn('Chargement des sons impossible, l’app reste utilisable sans son :', error);
+    });
+    return () => {
+      soundPlayerRef.current.unloadAll();
+    };
+  }, []);
+
+  const handleFlip = useCallback((event: FlipEventType) => {
+    const currentSettings = settingsRef.current;
+    const soundKey: SoundKey = event === 'haut-vers-bas' ? 'hautVersBas' : 'basVersHaut';
+    const shouldPlaySound = event === 'haut-vers-bas' || currentSettings.sonBasVersHautActif;
+    const toZone: 'HAUT' | 'BAS' = event === 'haut-vers-bas' ? 'BAS' : 'HAUT';
+    const durationMs = soundPlayerRef.current.getDurationMs(soundKey);
+
+    triggerIdRef.current += 1;
+    setFlipTrigger({ id: triggerIdRef.current, toZone, durationMs });
+    notifyPlaybackStartedRef.current(durationMs);
+
+    if (shouldPlaySound) {
+      soundPlayerRef.current.play(soundKey, currentSettings.volume).catch((error) => {
+        console.warn('Lecture du son impossible :', error);
+      });
+    }
+    if (currentSettings.vibrationActive) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+  }, []);
+
+  const { zone, notifyPlaybackStarted } = useFlipDetector(handleFlip);
+  notifyPlaybackStartedRef.current = notifyPlaybackStarted;
+
+  if (!isLoaded) {
+    return null;
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
+    <>
+      <MainScreen
+        illustrationSource={illustrationSource}
+        initialZone={zone}
+        flipTrigger={flipTrigger}
+        onOpenSettings={() => setSettingsVisible(true)}
+      />
+      <SettingsModal
+        visible={settingsVisible}
+        settings={settings}
+        onChangeSettings={updateSettings}
+        onClose={() => setSettingsVisible(false)}
+      />
       <StatusBar style="auto" />
-    </View>
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
