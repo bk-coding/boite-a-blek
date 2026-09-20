@@ -11,7 +11,15 @@ import { FLIP_CONFIG, ACCELEROMETER_UPDATE_INTERVAL_MS } from '../constants/conf
 export type FlipEventType = 'haut-vers-bas' | 'bas-vers-haut';
 
 export interface UseFlipDetectorResult {
+  /** Zone instantanée de l'échantillon courant (peut valoir `TRANSITION`). */
   zone: FlipZone;
+  /**
+   * Zone de repos réellement confirmée par la machine à états. Contrairement
+   * à `onFlip`, elle continue d'avancer pendant le cooldown de lecture : c'est
+   * la seule source de vérité pour resynchroniser l'affichage après une
+   * transition dont l'évènement a été supprimé.
+   */
+  confirmedZone: 'HAUT' | 'BAS';
   notifyPlaybackStarted: (durationMs: number) => void;
 }
 
@@ -23,6 +31,7 @@ export function useFlipDetector(
   const onFlipRef = useRef(onFlip);
   onFlipRef.current = onFlip;
   const [zone, setZone] = useState<FlipZone>('HAUT');
+  const [confirmedZone, setConfirmedZone] = useState<'HAUT' | 'BAS'>('HAUT');
 
   useEffect(() => {
     Accelerometer.setUpdateInterval(ACCELEROMETER_UPDATE_INTERVAL_MS);
@@ -48,6 +57,7 @@ export function useFlipDetector(
       );
       machineStateRef.current = nextState;
       setZone(nextState.zone);
+      setConfirmedZone(nextState.confirmedZone);
 
       if (event && timestampMs >= busyUntilMsRef.current) {
         onFlipRef.current(event);
@@ -61,5 +71,5 @@ export function useFlipDetector(
     busyUntilMsRef.current = Date.now() + durationMs;
   }, []);
 
-  return { zone, notifyPlaybackStarted };
+  return { zone, confirmedZone, notifyPlaybackStarted };
 }

@@ -85,6 +85,10 @@ describe('useFlipDetector', () => {
       emit(HAUT_SAMPLE); // stabilisé, mais encore dans le cooldown (330 < 730)
     });
     expect(onFlip).toHaveBeenCalledTimes(1); // toujours 1, l'évènement a été ignoré
+    // …mais la machine à états, elle, a bien avancé : l'orientation physique
+    // réelle est de nouveau HAUT. C'est cette valeur qui permet à l'écran de
+    // se resynchroniser malgré l'évènement supprimé.
+    expect(result.current.confirmedZone).toBe('HAUT');
 
     await act(() => {
       now = 800;
@@ -94,10 +98,12 @@ describe('useFlipDetector', () => {
     });
     expect(onFlip).toHaveBeenCalledTimes(2);
     expect(onFlip).toHaveBeenLastCalledWith('haut-vers-bas');
+    expect(result.current.confirmedZone).toBe('BAS');
   });
+
   test('ignore les échantillons où le téléphone n’est pas raisonnablement vertical', async () => {
     const onFlip = jest.fn();
-    await renderHook(() => useFlipDetector(onFlip));
+    const { result } = await renderHook(() => useFlipDetector(onFlip));
 
     await act(() => {
       now = 0;
@@ -109,6 +115,7 @@ describe('useFlipDetector', () => {
     });
 
     expect(onFlip).not.toHaveBeenCalled();
+    expect(result.current.confirmedZone).toBe('HAUT');
 
     // Contrôle : les mêmes x/y, mais téléphone vertical, déclenchent bien.
     await act(() => {

@@ -56,7 +56,7 @@ export default function App() {
     }
   }, []);
 
-  const { zone, notifyPlaybackStarted } = useFlipDetector(handleFlip);
+  const { confirmedZone, notifyPlaybackStarted } = useFlipDetector(handleFlip);
   notifyPlaybackStartedRef.current = notifyPlaybackStarted;
 
   if (!isLoaded) {
@@ -67,7 +67,7 @@ export default function App() {
     <>
       <MainScreen
         illustrationSource={illustrationSource}
-        initialZone={zone}
+        restZone={confirmedZone}
         flipTrigger={flipTrigger}
         onOpenSettings={() => setSettingsVisible(true)}
       />
