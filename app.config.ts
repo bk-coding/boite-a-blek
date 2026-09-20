@@ -1,17 +1,12 @@
 import { ExpoConfig } from 'expo/config';
 
-const config = {
+const config: ExpoConfig = {
   name: 'La Boîte à Blek',
   slug: 'boite-a-blek',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
-  splash: {
-    image: './assets/splash.png',
-    resizeMode: 'contain',
-    backgroundColor: '#ffb03b',
-  },
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: false,
@@ -24,7 +19,20 @@ const config = {
       backgroundColor: '#ffb03b',
     },
   },
-  plugins: ['expo-asset', 'expo-font'],
-} as ExpoConfig;
+  plugins: [
+    'expo-asset',
+    'expo-font',
+    // L'app ne fait que lire deux sons courts : ni micro, ni lecture en
+    // arrière-plan, donc aucune permission d'enregistrement demandée.
+    [
+      'expo-audio',
+      {
+        microphonePermission: false,
+        recordAudioAndroid: false,
+        enableBackgroundPlayback: false,
+      },
+    ],
+  ],
+};
 
 export default config;
