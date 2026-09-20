@@ -26,7 +26,18 @@ export function useFlipDetector(
 
   useEffect(() => {
     Accelerometer.setUpdateInterval(ACCELEROMETER_UPDATE_INTERVAL_MS);
-    const subscription = Accelerometer.addListener(({ x, y }) => {
+    const subscription = Accelerometer.addListener(({ x, y, z }) => {
+      // Filtre de verticalité (spec §3) : un téléphone posé à plat ou trop
+      // penché produirait un angle x/y purement bruité, susceptible de se
+      // « stabiliser » en BAS et de déclencher un son fantôme. On ignore
+      // complètement ces échantillons (aucun pas de machine à états).
+      if (
+        Math.abs(z) > FLIP_CONFIG.maxAbsZ ||
+        Math.hypot(x, y) < FLIP_CONFIG.minHorizontalMagnitude
+      ) {
+        return;
+      }
+
       const angleDeg = (Math.atan2(x, y) * 180) / Math.PI;
       const timestampMs = Date.now();
       const { state: nextState, event } = stepFlipStateMachine(
