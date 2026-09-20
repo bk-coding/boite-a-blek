@@ -27,17 +27,24 @@ export function useSettings(): UseSettingsResult {
 
   useEffect(() => {
     let isMounted = true;
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (!isMounted) return;
-      if (raw) {
-        try {
-          setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(raw) });
-        } catch {
-          setSettings(DEFAULT_SETTINGS);
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (!isMounted) return;
+        if (raw) {
+          try {
+            setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(raw) });
+          } catch {
+            setSettings(DEFAULT_SETTINGS);
+          }
         }
-      }
-      setIsLoaded(true);
-    });
+        setIsLoaded(true);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        console.warn('useSettings: échec du chargement des paramètres, utilisation des valeurs par défaut', error);
+        setSettings(DEFAULT_SETTINGS);
+        setIsLoaded(true);
+      });
     return () => {
       isMounted = false;
     };
@@ -46,7 +53,9 @@ export function useSettings(): UseSettingsResult {
   const updateSettings = useCallback((patch: Partial<Settings>) => {
     setSettings((current) => {
       const next = { ...current, ...patch };
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch((error) => {
+        console.warn('useSettings: échec de la sauvegarde des paramètres', error);
+      });
       return next;
     });
   }, []);

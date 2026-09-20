@@ -50,4 +50,17 @@ describe('useSettings', () => {
       volume: 0.4,
     });
   });
+
+  test('passe isLoaded à true avec les valeurs par défaut si le chargement échoue', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(new Error('lecture impossible'));
+
+    const { result } = await renderHook(() => useSettings());
+
+    await waitFor(() => expect(result.current.isLoaded).toBe(true));
+    expect(result.current.settings).toEqual(DEFAULT_SETTINGS);
+    expect(warnSpy).toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+  });
 });
