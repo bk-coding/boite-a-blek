@@ -13,8 +13,9 @@ function writeFile(relativePath, buffer) {
 
 const BLEK_ORANGE = [255, 176, 59];
 
-writeFile('assets/images/illustration.png', makeSolidPng(400, 400, BLEK_ORANGE));
+// L'illustration (assets/images/illustration.png) et les sons
+// (assets/sounds/*.m4a) sont désormais les fichiers définitifs fournis
+// par l'utilisateur — ne plus les régénérer ici pour éviter de les
+// écraser. Seuls l'icône et le splash restent des placeholders.
 writeFile('assets/icon.png', makeSolidPng(1024, 1024, BLEK_ORANGE));
 writeFile('assets/splash.png', makeSolidPng(1284, 2778, BLEK_ORANGE));
-writeFile('assets/sounds/haut-vers-bas.wav', makeToneWav(0.6, 440));
-writeFile('assets/sounds/bas-vers-haut.wav', makeToneWav(0.6, 660));

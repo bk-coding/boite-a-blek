@@ -3,8 +3,8 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
 export type SoundKey = 'hautVersBas' | 'basVersHaut';
 
 const SOUND_SOURCES: Record<SoundKey, number> = {
-  hautVersBas: require('../../assets/sounds/haut-vers-bas.wav'),
-  basVersHaut: require('../../assets/sounds/bas-vers-haut.wav'),
+  hautVersBas: require('../../assets/sounds/blek.m4a'),
+  basVersHaut: require('../../assets/sounds/10-minutes.m4a'),
 };
 
 /**
