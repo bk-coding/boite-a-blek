@@ -6,3 +6,5 @@ export const FLIP_CONFIG = {
 };
 
 export const ACCELEROMETER_UPDATE_INTERVAL_MS = 16;
+
+export const ILLUSTRATION_TRAVEL_DISTANCE = 200;
