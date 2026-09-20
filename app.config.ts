@@ -32,6 +32,15 @@ const config: ExpoConfig = {
         enableBackgroundPlayback: false,
       },
     ],
+    [
+      'expo-splash-screen',
+      {
+        image: './assets/images/illustration.png',
+        imageWidth: 200,
+        resizeMode: 'contain',
+        backgroundColor: '#ffb03b',
+      },
+    ],
   ],
 };
 
