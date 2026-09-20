@@ -56,7 +56,7 @@ export default function App() {
     }
   }, []);
 
-  const { confirmedZone, notifyPlaybackStarted } = useFlipDetector(handleFlip);
+  const { confirmedZone, angleDeg, notifyPlaybackStarted } = useFlipDetector(handleFlip);
   notifyPlaybackStartedRef.current = notifyPlaybackStarted;
 
   if (!isLoaded) {
@@ -69,6 +69,7 @@ export default function App() {
         illustrationSource={illustrationSource}
         restZone={confirmedZone}
         flipTrigger={flipTrigger}
+        angleDeg={angleDeg}
         onOpenSettings={() => setSettingsVisible(true)}
       />
       <SettingsModal

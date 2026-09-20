@@ -126,4 +126,23 @@ describe('useFlipDetector', () => {
     });
     expect(onFlip).toHaveBeenCalledWith('haut-vers-bas');
   });
+
+  test('expose l’angle brut en continu pour suivre l’orientation en temps réel', async () => {
+    const onFlip = jest.fn();
+    const { result } = await renderHook(() => useFlipDetector(onFlip));
+
+    expect(result.current.angleDeg).toBe(0);
+
+    await act(() => {
+      now = 0;
+      emit({ x: 1, y: 0, z: 0 }); // atan2(1, 0) = 90°
+    });
+    expect(result.current.angleDeg).toBeCloseTo(90);
+
+    await act(() => {
+      now = 10;
+      emit(A_PLAT_SAMPLE); // filtré (téléphone à plat) : angle inchangé
+    });
+    expect(result.current.angleDeg).toBeCloseTo(90);
+  });
 });

@@ -4,10 +4,16 @@ import {
   ImageSourcePropType,
   Pressable,
   StyleSheet,
+  Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ILLUSTRATION_TRAVEL_DISTANCE } from '../constants/config';
+import {
+  ILLUSTRATION_BOTTOM_MARGIN,
+  ILLUSTRATION_SIZE,
+  ILLUSTRATION_TOP_MARGIN,
+} from '../constants/config';
 
 export interface FlipAnimationTrigger {
   id: number;
@@ -26,20 +32,31 @@ export interface MainScreenProps {
    */
   restZone: 'HAUT' | 'BAS';
   flipTrigger: FlipAnimationTrigger | null;
+  /**
+   * Angle de roulis brut et continu (degrés). Fait tourner l'illustration en
+   * temps réel pour qu'elle reste toujours dans le bon sens pour la personne
+   * qui regarde, quelle que soit la façon dont le téléphone est orienté.
+   */
+  angleDeg: number;
   onOpenSettings: () => void;
-}
-
-function zoneToTranslateY(zone: 'HAUT' | 'BAS'): number {
-  return zone === 'HAUT' ? 0 : ILLUSTRATION_TRAVEL_DISTANCE;
 }
 
 export function MainScreen({
   illustrationSource,
   restZone,
   flipTrigger,
+  angleDeg,
   onOpenSettings,
 }: MainScreenProps) {
+  const { height: windowHeight } = useWindowDimensions();
+  const topY = ILLUSTRATION_TOP_MARGIN;
+  const bottomY = windowHeight - ILLUSTRATION_SIZE - ILLUSTRATION_BOTTOM_MARGIN;
+
+  const zoneToTranslateY = (zone: 'HAUT' | 'BAS'): number =>
+    zone === 'HAUT' ? topY : bottomY;
+
   const translateY = useRef(new Animated.Value(zoneToTranslateY(restZone))).current;
+  const rotate = useRef(new Animated.Value(0)).current;
   const lastTriggerId = useRef<number | null>(null);
   const animationInFlightRef = useRef(false);
   const restZoneRef = useRef<'HAUT' | 'BAS'>(restZone);
@@ -63,7 +80,8 @@ export function MainScreen({
         translateY.setValue(zoneToTranslateY(restZoneRef.current));
       }
     });
-  }, [flipTrigger, translateY]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flipTrigger, translateY, topY, bottomY]);
 
   useEffect(() => {
     restZoneRef.current = restZone;
@@ -72,29 +90,58 @@ export function MainScreen({
       return;
     }
     translateY.setValue(zoneToTranslateY(restZone));
-  }, [restZone, translateY]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restZone, translateY, topY, bottomY]);
+
+  useEffect(() => {
+    // Suivi en temps réel, sans animation : la rotation doit être aussi
+    // réactive que le geste physique lui-même.
+    rotate.setValue(-angleDeg);
+  }, [angleDeg, rotate]);
+
+  const rotateInterpolated = rotate.interpolate({
+    inputRange: [-180, 180],
+    outputRange: ['-180deg', '180deg'],
+  });
 
   return (
     <View style={styles.container} testID="main-screen">
       <Animated.Image
         testID="illustration"
         source={illustrationSource}
-        style={[styles.illustration, { transform: [{ translateY }] }]}
+        style={[
+          styles.illustration,
+          { transform: [{ translateY }, { rotate: rotateInterpolated }] },
+        ]}
         resizeMode="contain"
       />
-      <Pressable
-        testID="settings-button"
-        onPress={onOpenSettings}
-        style={styles.settingsButton}
-      >
-        <Ionicons name="settings-outline" size={32} color="#333" />
-      </Pressable>
+      <View style={styles.header}>
+        <Text style={styles.title}>La Boîte à Blek</Text>
+        <Pressable testID="settings-button" onPress={onOpenSettings}>
+          <Ionicons name="settings-outline" size={32} color="#333" />
+        </Pressable>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  illustration: { width: 200, height: 200 },
-  settingsButton: { position: 'absolute', top: 48, right: 24 },
+  container: { flex: 1, backgroundColor: '#fff', alignItems: 'center' },
+  header: {
+    position: 'absolute',
+    top: 48,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  title: { fontSize: 20, fontWeight: '600', color: '#333' },
+  illustration: {
+    position: 'absolute',
+    top: 0,
+    width: ILLUSTRATION_SIZE,
+    height: ILLUSTRATION_SIZE,
+  },
 });

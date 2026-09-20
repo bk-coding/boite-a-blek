@@ -20,4 +20,8 @@ export const FLIP_CONFIG = {
 
 export const ACCELEROMETER_UPDATE_INTERVAL_MS = 16;
 
-export const ILLUSTRATION_TRAVEL_DISTANCE = 200;
+export const ILLUSTRATION_SIZE = 280;
+/** Marge sous l'en-tête (titre + roue dentée) pour la position « HAUT ». */
+export const ILLUSTRATION_TOP_MARGIN = 110;
+/** Marge au-dessus du bord bas de l'écran pour la position « BAS ». */
+export const ILLUSTRATION_BOTTOM_MARGIN = 40;

@@ -20,6 +20,13 @@ export interface UseFlipDetectorResult {
    * transition dont l'évènement a été supprimé.
    */
   confirmedZone: 'HAUT' | 'BAS';
+  /**
+   * Angle de roulis brut et continu (degrés, `atan2(x, y)`), mis à jour à
+   * chaque échantillon valide. Sert à faire suivre l'orientation réelle du
+   * téléphone à l'illustration (rotation en temps réel), indépendamment des
+   * zones HAUT/BAS/TRANSITION utilisées pour la détection du geste.
+   */
+  angleDeg: number;
   notifyPlaybackStarted: (durationMs: number) => void;
 }
 
@@ -32,6 +39,7 @@ export function useFlipDetector(
   onFlipRef.current = onFlip;
   const [zone, setZone] = useState<FlipZone>('HAUT');
   const [confirmedZone, setConfirmedZone] = useState<'HAUT' | 'BAS'>('HAUT');
+  const [angleDeg, setAngleDeg] = useState<number>(0);
 
   useEffect(() => {
     Accelerometer.setUpdateInterval(ACCELEROMETER_UPDATE_INTERVAL_MS);
@@ -47,17 +55,18 @@ export function useFlipDetector(
         return;
       }
 
-      const angleDeg = (Math.atan2(x, y) * 180) / Math.PI;
+      const currentAngleDeg = (Math.atan2(x, y) * 180) / Math.PI;
       const timestampMs = Date.now();
       const { state: nextState, event } = stepFlipStateMachine(
         machineStateRef.current,
-        angleDeg,
+        currentAngleDeg,
         timestampMs,
         FLIP_CONFIG
       );
       machineStateRef.current = nextState;
       setZone(nextState.zone);
       setConfirmedZone(nextState.confirmedZone);
+      setAngleDeg(currentAngleDeg);
 
       if (event && timestampMs >= busyUntilMsRef.current) {
         onFlipRef.current(event);
@@ -71,5 +80,5 @@ export function useFlipDetector(
     busyUntilMsRef.current = Date.now() + durationMs;
   }, []);
 
-  return { zone, confirmedZone, notifyPlaybackStarted };
+  return { zone, confirmedZone, angleDeg, notifyPlaybackStarted };
 }

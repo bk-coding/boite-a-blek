@@ -2,11 +2,21 @@ import React from 'react';
 import { Animated } from 'react-native';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { MainScreen } from './MainScreen';
-import { ILLUSTRATION_TRAVEL_DISTANCE } from '../constants/config';
+import {
+  ILLUSTRATION_BOTTOM_MARGIN,
+  ILLUSTRATION_SIZE,
+  ILLUSTRATION_TOP_MARGIN,
+} from '../constants/config';
 
 const dummySource = { uri: 'test' };
 
+// Dimensions par défaut de l'environnement de test RN (Dimensions.get('window')).
+const TEST_WINDOW_HEIGHT = 1334;
+const TOP_Y = ILLUSTRATION_TOP_MARGIN;
+const BOTTOM_Y = TEST_WINDOW_HEIGHT - ILLUSTRATION_SIZE - ILLUSTRATION_BOTTOM_MARGIN;
+
 const translateYOf = (element: any): number => element.props.style.transform[0].translateY;
+const rotateOf = (element: any): string => element.props.style.transform[1].rotate;
 
 describe('MainScreen', () => {
   afterEach(() => {
@@ -20,6 +30,7 @@ describe('MainScreen', () => {
         illustrationSource={dummySource}
         restZone="HAUT"
         flipTrigger={null}
+        angleDeg={0}
         onOpenSettings={onOpenSettings}
       />
     );
@@ -29,12 +40,27 @@ describe('MainScreen', () => {
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
+  test('affiche le titre à gauche de la roue dentée', async () => {
+    const { getByText } = await render(
+      <MainScreen
+        illustrationSource={dummySource}
+        restZone="HAUT"
+        flipTrigger={null}
+        angleDeg={0}
+        onOpenSettings={() => {}}
+      />
+    );
+
+    expect(getByText('La Boîte à Blek')).toBeTruthy();
+  });
+
   test('affiche l’illustration sans planter au changement de flipTrigger', async () => {
     const { getByTestId, rerender } = await render(
       <MainScreen
         illustrationSource={dummySource}
         restZone="HAUT"
         flipTrigger={null}
+        angleDeg={0}
         onOpenSettings={() => {}}
       />
     );
@@ -45,6 +71,7 @@ describe('MainScreen', () => {
         illustrationSource={dummySource}
         restZone="HAUT"
         flipTrigger={{ id: 1, toZone: 'BAS', durationMs: 500 }}
+        angleDeg={0}
         onOpenSettings={() => {}}
       />
     );
@@ -56,6 +83,7 @@ describe('MainScreen', () => {
         illustrationSource={dummySource}
         restZone="HAUT"
         flipTrigger={{ id: 1, toZone: 'BAS', durationMs: 500 }}
+        angleDeg={0}
         onOpenSettings={() => {}}
       />
     );
@@ -68,21 +96,23 @@ describe('MainScreen', () => {
         illustrationSource={dummySource}
         restZone="HAUT"
         flipTrigger={null}
+        angleDeg={0}
         onOpenSettings={() => {}}
       />
     );
-    expect(translateYOf(getByTestId('illustration'))).toBe(0);
+    expect(translateYOf(getByTestId('illustration'))).toBe(TOP_Y);
 
     await rerender(
       <MainScreen
         illustrationSource={dummySource}
         restZone="BAS"
         flipTrigger={null}
+        angleDeg={0}
         onOpenSettings={() => {}}
       />
     );
 
-    expect(translateYOf(getByTestId('illustration'))).toBe(ILLUSTRATION_TRAVEL_DISTANCE);
+    expect(translateYOf(getByTestId('illustration'))).toBe(BOTTOM_Y);
   });
 
   test('diffère le recalage jusqu’à la fin de l’animation en cours', async () => {
@@ -108,6 +138,7 @@ describe('MainScreen', () => {
         illustrationSource={dummySource}
         restZone="HAUT"
         flipTrigger={null}
+        angleDeg={0}
         onOpenSettings={() => {}}
       />
     );
@@ -118,11 +149,12 @@ describe('MainScreen', () => {
         illustrationSource={dummySource}
         restZone="BAS"
         flipTrigger={{ id: 1, toZone: 'BAS', durationMs: 600 }}
+        angleDeg={0}
         onOpenSettings={() => {}}
       />
     );
     expect(Animated.timing).toHaveBeenCalledTimes(1);
-    expect(translateYOf(getByTestId('illustration'))).toBe(ILLUSTRATION_TRAVEL_DISTANCE);
+    expect(translateYOf(getByTestId('illustration'))).toBe(BOTTOM_Y);
 
     // Retour en haut pendant le cooldown : aucun flipTrigger (évènement
     // supprimé), seule restZone change. L'animation en cours n'est pas coupée.
@@ -131,16 +163,44 @@ describe('MainScreen', () => {
         illustrationSource={dummySource}
         restZone="HAUT"
         flipTrigger={{ id: 1, toZone: 'BAS', durationMs: 600 }}
+        angleDeg={0}
         onOpenSettings={() => {}}
       />
     );
     expect(Animated.timing).toHaveBeenCalledTimes(1);
-    expect(translateYOf(getByTestId('illustration'))).toBe(ILLUSTRATION_TRAVEL_DISTANCE);
+    expect(translateYOf(getByTestId('illustration'))).toBe(BOTTOM_Y);
 
     // Fin de l'animation : l'illustration rattrape l'orientation physique.
     await act(async () => {
       completions.forEach((done) => done());
     });
-    expect(translateYOf(getByTestId('illustration'))).toBe(0);
+    expect(translateYOf(getByTestId('illustration'))).toBe(TOP_Y);
+  });
+
+  test('fait tourner l’illustration en temps réel selon angleDeg', async () => {
+    const { getByTestId, rerender } = await render(
+      <MainScreen
+        illustrationSource={dummySource}
+        restZone="HAUT"
+        flipTrigger={null}
+        angleDeg={0}
+        onOpenSettings={() => {}}
+      />
+    );
+    expect(rotateOf(getByTestId('illustration'))).toBe('0deg');
+
+    await rerender(
+      <MainScreen
+        illustrationSource={dummySource}
+        restZone="HAUT"
+        flipTrigger={null}
+        angleDeg={90}
+        onOpenSettings={() => {}}
+      />
+    );
+
+    // La rotation compense l'angle du téléphone (signe opposé) pour que
+    // l'illustration reste dans le bon sens pour la personne qui regarde.
+    expect(rotateOf(getByTestId('illustration'))).toBe('-90deg');
   });
 });
