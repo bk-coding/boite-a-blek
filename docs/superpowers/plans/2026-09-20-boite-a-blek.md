@@ -915,8 +915,8 @@ jest.mock('expo-av', () => {
           })
         ),
       },
+      __mockSound: mockSound,
     },
-    __mockSound: mockSound,
   };
 });
 
@@ -1478,8 +1478,8 @@ jest.mock('expo-av', () => {
           Promise.resolve({ sound: mockSound, status: { isLoaded: true, durationMillis: 600 } })
         ),
       },
+      __mockSound: mockSound,
     },
-    __mockSound: mockSound,
   };
 });
 
