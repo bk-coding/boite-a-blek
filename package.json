@@ -32,7 +32,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest",
-    "generate:sounds": "node scripts/generate-sound-manifest.js"
+    "generate:sounds": "node scripts/generate-sound-manifest.js",
+    "generate:themes": "node scripts/generate-theme-manifest.js"
   },
   "private": true,
   "jest": {

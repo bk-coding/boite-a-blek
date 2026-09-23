@@ -51,6 +51,7 @@ describe('MainScreen', () => {
         restZone="HAUT"
         flipTrigger={null}
         angleDeg={0}
+        themeSource={null}
         onOpenSettings={onOpenSettings}
       />
     );
@@ -67,6 +68,7 @@ describe('MainScreen', () => {
         restZone="HAUT"
         flipTrigger={null}
         angleDeg={0}
+        themeSource={null}
         onOpenSettings={() => {}}
       />
     );
@@ -81,6 +83,7 @@ describe('MainScreen', () => {
         restZone="HAUT"
         flipTrigger={null}
         angleDeg={0}
+        themeSource={null}
         onOpenSettings={() => {}}
       />
     );
@@ -92,6 +95,7 @@ describe('MainScreen', () => {
         restZone="HAUT"
         flipTrigger={{ id: 1, toZone: 'BAS', durationMs: 500 }}
         angleDeg={0}
+        themeSource={null}
         onOpenSettings={() => {}}
       />
     );
@@ -104,6 +108,7 @@ describe('MainScreen', () => {
         restZone="HAUT"
         flipTrigger={{ id: 1, toZone: 'BAS', durationMs: 500 }}
         angleDeg={0}
+        themeSource={null}
         onOpenSettings={() => {}}
       />
     );
@@ -118,6 +123,7 @@ describe('MainScreen', () => {
         restZone="HAUT"
         flipTrigger={null}
         angleDeg={0}
+        themeSource={null}
         onOpenSettings={() => {}}
       />
     );
@@ -129,6 +135,7 @@ describe('MainScreen', () => {
         restZone="BAS"
         flipTrigger={null}
         angleDeg={0}
+        themeSource={null}
         onOpenSettings={() => {}}
       />
     );
@@ -160,6 +167,7 @@ describe('MainScreen', () => {
         restZone="HAUT"
         flipTrigger={null}
         angleDeg={0}
+        themeSource={null}
         onOpenSettings={() => {}}
       />
     );
@@ -173,6 +181,7 @@ describe('MainScreen', () => {
         restZone="BAS"
         flipTrigger={{ id: 1, toZone: 'BAS', durationMs: 600 }}
         angleDeg={0}
+        themeSource={null}
         onOpenSettings={() => {}}
       />
     );
@@ -187,6 +196,7 @@ describe('MainScreen', () => {
         restZone="HAUT"
         flipTrigger={{ id: 1, toZone: 'BAS', durationMs: 600 }}
         angleDeg={0}
+        themeSource={null}
         onOpenSettings={() => {}}
       />
     );
@@ -212,6 +222,7 @@ describe('MainScreen', () => {
         restZone="HAUT"
         flipTrigger={null}
         angleDeg={0}
+        themeSource={null}
         onOpenSettings={() => {}}
       />
     );
@@ -223,6 +234,7 @@ describe('MainScreen', () => {
         restZone="HAUT"
         flipTrigger={null}
         angleDeg={90}
+        themeSource={null}
         onOpenSettings={() => {}}
       />
     );
@@ -231,5 +243,36 @@ describe('MainScreen', () => {
     // dans le même sens que l'angle mesuré (pas de compensation de signe),
     // avec le décalage constant de 180° toujours appliqué.
     expect(rotateOf(getByTestId('illustration'))).toBe('270deg');
+  });
+
+  test('n’affiche aucun fond de thème quand themeSource est null', async () => {
+    const { queryByTestId } = await render(
+      <MainScreen
+        illustrationSource={dummySource}
+        restZone="HAUT"
+        flipTrigger={null}
+        angleDeg={0}
+        themeSource={null}
+        onOpenSettings={() => {}}
+      />
+    );
+
+    expect(queryByTestId('theme-background')).toBeNull();
+  });
+
+  test('affiche le fond de thème choisi', async () => {
+    const themeSource = { uri: 'theme-sombre' };
+    const { getByTestId } = await render(
+      <MainScreen
+        illustrationSource={dummySource}
+        restZone="HAUT"
+        flipTrigger={null}
+        angleDeg={0}
+        themeSource={themeSource}
+        onOpenSettings={() => {}}
+      />
+    );
+
+    expect(getByTestId('theme-background').props.source).toBe(themeSource);
   });
 });

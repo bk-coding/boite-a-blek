@@ -66,6 +66,54 @@ describe('SettingsModal', () => {
     expect(queryByTestId('sound-option-none-check')).toBeNull();
   });
 
+  test('sélectionne un thème', async () => {
+    const onChangeSettings = jest.fn();
+    const { getByTestId } = await render(
+      <SettingsModal
+        visible
+        settings={DEFAULT_SETTINGS}
+        onChangeSettings={onChangeSettings}
+        onClose={() => {}}
+      />
+    );
+
+    fireEvent.press(getByTestId('theme-option-sombre'));
+
+    expect(onChangeSettings).toHaveBeenCalledWith({ themeKey: 'sombre' });
+  });
+
+  test('« Aucun » repasse le thème à null', async () => {
+    const onChangeSettings = jest.fn();
+    const { getByTestId } = await render(
+      <SettingsModal
+        visible
+        settings={{ ...DEFAULT_SETTINGS, themeKey: 'sombre' }}
+        onChangeSettings={onChangeSettings}
+        onClose={() => {}}
+      />
+    );
+
+    fireEvent.press(getByTestId('theme-option-none'));
+
+    expect(onChangeSettings).toHaveBeenCalledWith({ themeKey: null });
+  });
+
+  test('coche le thème actuellement sélectionné, et un seul', async () => {
+    const { getByTestId, queryByTestId } = await render(
+      <SettingsModal
+        visible
+        settings={{ ...DEFAULT_SETTINGS, themeKey: 'orange' }}
+        onChangeSettings={() => {}}
+        onClose={() => {}}
+      />
+    );
+
+    expect(getByTestId('theme-option-orange-check')).toBeTruthy();
+    expect(queryByTestId('theme-option-none-check')).toBeNull();
+    expect(queryByTestId('theme-option-clair-check')).toBeNull();
+    expect(queryByTestId('theme-option-sombre-check')).toBeNull();
+  });
+
   test('bascule la vibration', async () => {
     const onChangeSettings = jest.fn();
     const { getByTestId } = await render(

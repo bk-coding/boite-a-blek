@@ -10,12 +10,18 @@ export interface Settings {
   basVersHautSoundKey: string | null;
   volume: number;
   vibrationActive: boolean;
+  /**
+   * Clé (voir `THEMES` dans `src/theme/themeManifest.ts`) de l'image de fond
+   * choisie pour l'écran principal, ou `null` pour le fond blanc par défaut.
+   */
+  themeKey: string | null;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   basVersHautSoundKey: null,
   volume: 1,
   vibrationActive: true,
+  themeKey: null,
 };
 
 const STORAGE_KEY = '@boite-a-blek/settings';

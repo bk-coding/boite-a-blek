@@ -180,6 +180,22 @@ describe('App', () => {
     await waitFor(() => expect(mockPlayer.play).toHaveBeenCalledTimes(2));
   });
 
+  test('applique le thème choisi dans les paramètres, et son changement en direct', async () => {
+    await AsyncStorage.setItem('@boite-a-blek/settings', JSON.stringify({ themeKey: 'orange' }));
+
+    const { getByTestId, queryByTestId } = await render(<App />);
+    await waitFor(() => expect(createAudioPlayer).toHaveBeenCalledTimes(2));
+
+    expect(getByTestId('theme-background')).toBeTruthy();
+
+    // Changement en direct depuis les paramètres, sans redémarrer l'app.
+    fireEvent.press(getByTestId('settings-button'));
+    await waitFor(() => expect(queryByTestId('theme-option-none')).not.toBeNull());
+    fireEvent.press(getByTestId('theme-option-none'));
+
+    await waitFor(() => expect(queryByTestId('theme-background')).toBeNull());
+  });
+
   test('reste utilisable si le chargement des sons échoue', async () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     createAudioPlayer.mockImplementation(() => {

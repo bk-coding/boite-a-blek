@@ -27,7 +27,7 @@ describe('useSettings', () => {
     await waitFor(() => expect(result.current.isLoaded).toBe(true));
 
     await act(() => {
-      result.current.updateSettings({ basVersHautSoundKey: '10-minutes', volume: 0.4 });
+      result.current.updateSettings({ basVersHautSoundKey: '10-minutes', volume: 0.4, themeKey: 'sombre' });
     });
 
     await waitFor(() =>
@@ -35,6 +35,7 @@ describe('useSettings', () => {
         ...DEFAULT_SETTINGS,
         basVersHautSoundKey: '10-minutes',
         volume: 0.4,
+        themeKey: 'sombre',
       })
     );
 
@@ -48,6 +49,7 @@ describe('useSettings', () => {
       ...DEFAULT_SETTINGS,
       basVersHautSoundKey: '10-minutes',
       volume: 0.4,
+      themeKey: 'sombre',
     });
   });
 

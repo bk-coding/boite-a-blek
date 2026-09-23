@@ -6,6 +6,7 @@ import { SettingsModal } from './src/components/SettingsModal';
 import { useFlipDetector, FlipEventType } from './src/hooks/useFlipDetector';
 import { useSettings } from './src/hooks/useSettings';
 import { createSoundPlayer, HAUT_VERS_BAS_KEY } from './src/audio/soundPlayer';
+import { THEMES } from './src/theme/themeManifest';
 
 const illustrationSource = require('./assets/images/illustration.png');
 
@@ -71,6 +72,10 @@ export default function App() {
     return null;
   }
 
+  const themeSource = settings.themeKey
+    ? THEMES.find((theme) => theme.key === settings.themeKey)?.source ?? null
+    : null;
+
   return (
     <>
       <MainScreen
@@ -78,6 +83,7 @@ export default function App() {
         restZone={confirmedZone}
         flipTrigger={flipTrigger}
         angleDeg={angleDeg}
+        themeSource={themeSource}
         onOpenSettings={() => setSettingsVisible(true)}
       />
       <SettingsModal

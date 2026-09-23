@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Easing,
+  Image,
   ImageSourcePropType,
   Pressable,
   StyleSheet,
@@ -41,6 +42,11 @@ export interface MainScreenProps {
    * quelle que soit la façon dont le téléphone est orienté.
    */
   angleDeg: number;
+  /**
+   * Image de fond du thème choisi dans les paramètres, ou `null` pour le
+   * fond blanc par défaut (réglage `themeKey` non défini).
+   */
+  themeSource: ImageSourcePropType | null;
   onOpenSettings: () => void;
 }
 
@@ -49,6 +55,7 @@ export function MainScreen({
   restZone,
   flipTrigger,
   angleDeg,
+  themeSource,
   onOpenSettings,
 }: MainScreenProps) {
   const { height: windowHeight } = useWindowDimensions();
@@ -142,6 +149,14 @@ export function MainScreen({
 
   return (
     <View style={styles.container} testID="main-screen">
+      {themeSource ? (
+        <Image
+          testID="theme-background"
+          source={themeSource}
+          style={styles.themeBackground}
+          resizeMode="cover"
+        />
+      ) : null}
       <Animated.Image
         testID="illustration"
         source={illustrationSource}
@@ -174,6 +189,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   title: { fontSize: 20, fontWeight: '600', color: '#333' },
+  themeBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   illustration: {
     position: 'absolute',
     top: 0,
