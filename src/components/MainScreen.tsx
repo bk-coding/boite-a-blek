@@ -58,7 +58,7 @@ export function MainScreen({
   themeSource,
   onOpenSettings,
 }: MainScreenProps) {
-  const { height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const topY = ILLUSTRATION_TOP_MARGIN;
   const bottomY = windowHeight - ILLUSTRATION_SIZE - ILLUSTRATION_BOTTOM_MARGIN;
 
@@ -153,7 +153,12 @@ export function MainScreen({
         <Image
           testID="theme-background"
           source={themeSource}
-          style={styles.themeBackground}
+          // Sur Android, resizeMode="cover" a besoin d'une largeur/hauteur
+          // numériques explicites : avec un simple encadrement par
+          // top/left/right/bottom, l'image est parfois affichée à sa taille
+          // intrinsèque (donc énormément zoomée) au lieu d'être ajustée à
+          // l'écran. Constaté sur device réel.
+          style={[styles.themeBackground, { width: windowWidth, height: windowHeight }]}
           resizeMode="cover"
         />
       ) : null}
@@ -180,13 +185,19 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', alignItems: 'center' },
   header: {
     position: 'absolute',
-    top: 48,
+    top: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 48,
+    paddingBottom: 12,
     paddingHorizontal: 24,
+    // Toujours sur fond blanc opaque : avec un thème sombre ou chargé,
+    // le titre et la roue dentée deviendraient illisibles s'ils se
+    // superposaient directement à l'image de fond.
+    backgroundColor: '#fff',
   },
   title: { fontSize: 20, fontWeight: '600', color: '#333' },
   themeBackground: {

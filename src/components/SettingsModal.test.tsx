@@ -20,6 +20,40 @@ jest.mock('@react-native-community/slider', () => {
 // Promise so effects are flushed on the RN test renderer). Every call below
 // is awaited for that reason; the rest of the brief's test code is unchanged.
 describe('SettingsModal', () => {
+  test('les listes de son et de thème sont repliées par défaut', async () => {
+    const { queryByTestId, getByText } = await render(
+      <SettingsModal
+        visible
+        settings={DEFAULT_SETTINGS}
+        onChangeSettings={() => {}}
+        onClose={() => {}}
+      />
+    );
+
+    expect(queryByTestId('sound-option-none')).toBeNull();
+    expect(queryByTestId('theme-option-none')).toBeNull();
+    // La valeur actuelle reste visible même repliée.
+    expect(getByText('Aucun')).toBeTruthy();
+    expect(getByText('Aucun (fond blanc)')).toBeTruthy();
+  });
+
+  test('déplie puis replie la liste des sons au clic sur l’en-tête', async () => {
+    const { getByTestId, queryByTestId } = await render(
+      <SettingsModal
+        visible
+        settings={DEFAULT_SETTINGS}
+        onChangeSettings={() => {}}
+        onClose={() => {}}
+      />
+    );
+
+    await fireEvent.press(getByTestId('bas-vers-haut-selector-toggle'));
+    expect(queryByTestId('sound-option-none')).toBeTruthy();
+
+    await fireEvent.press(getByTestId('bas-vers-haut-selector-toggle'));
+    expect(queryByTestId('sound-option-none')).toBeNull();
+  });
+
   test('sélectionne un son pour le retour en position haute', async () => {
     const onChangeSettings = jest.fn();
     const { getByTestId } = await render(
@@ -31,6 +65,7 @@ describe('SettingsModal', () => {
       />
     );
 
+    await fireEvent.press(getByTestId('bas-vers-haut-selector-toggle'));
     fireEvent.press(getByTestId('sound-option-10-minutes'));
 
     expect(onChangeSettings).toHaveBeenCalledWith({ basVersHautSoundKey: '10-minutes' });
@@ -47,6 +82,7 @@ describe('SettingsModal', () => {
       />
     );
 
+    await fireEvent.press(getByTestId('bas-vers-haut-selector-toggle'));
     fireEvent.press(getByTestId('sound-option-none'));
 
     expect(onChangeSettings).toHaveBeenCalledWith({ basVersHautSoundKey: null });
@@ -61,6 +97,8 @@ describe('SettingsModal', () => {
         onClose={() => {}}
       />
     );
+
+    await fireEvent.press(getByTestId('bas-vers-haut-selector-toggle'));
 
     expect(getByTestId('sound-option-10-minutes-check')).toBeTruthy();
     expect(queryByTestId('sound-option-none-check')).toBeNull();
@@ -77,6 +115,7 @@ describe('SettingsModal', () => {
       />
     );
 
+    await fireEvent.press(getByTestId('theme-selector-toggle'));
     fireEvent.press(getByTestId('theme-option-Noir'));
 
     expect(onChangeSettings).toHaveBeenCalledWith({ themeKey: 'Noir' });
@@ -93,6 +132,7 @@ describe('SettingsModal', () => {
       />
     );
 
+    await fireEvent.press(getByTestId('theme-selector-toggle'));
     fireEvent.press(getByTestId('theme-option-none'));
 
     expect(onChangeSettings).toHaveBeenCalledWith({ themeKey: null });
@@ -107,6 +147,8 @@ describe('SettingsModal', () => {
         onClose={() => {}}
       />
     );
+
+    await fireEvent.press(getByTestId('theme-selector-toggle'));
 
     expect(getByTestId('theme-option-Orange-check')).toBeTruthy();
     expect(queryByTestId('theme-option-none-check')).toBeNull();

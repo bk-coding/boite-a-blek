@@ -190,7 +190,8 @@ describe('App', () => {
 
     // Changement en direct depuis les paramètres, sans redémarrer l'app.
     fireEvent.press(getByTestId('settings-button'));
-    await waitFor(() => expect(queryByTestId('theme-option-none')).not.toBeNull());
+    await waitFor(() => expect(queryByTestId('theme-selector-toggle')).not.toBeNull());
+    await fireEvent.press(getByTestId('theme-selector-toggle'));
     fireEvent.press(getByTestId('theme-option-none'));
 
     await waitFor(() => expect(queryByTestId('theme-background')).toBeNull());
