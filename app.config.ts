@@ -41,6 +41,15 @@ const config: ExpoConfig = {
         backgroundColor: '#000000',
       },
     ],
+    [
+      'expo-build-properties',
+      {
+        android: {
+          enableProguardInReleaseBuilds: true,
+          enableShrinkResourcesInReleaseBuilds: true,
+        },
+      },
+    ],
   ],
   extra: {
     eas: {

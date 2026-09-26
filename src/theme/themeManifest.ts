@@ -9,11 +9,11 @@ export interface ThemeManifestEntry {
 }
 
 export const THEMES: ThemeManifestEntry[] = [
-  { key: "Blanc", label: "Blanc", source: require('../../assets/images/themes/Blanc.png') },
-  { key: "Motif-1", label: "Motif-1", source: require('../../assets/images/themes/Motif-1.png') },
-  { key: "Motif-2", label: "Motif-2", source: require('../../assets/images/themes/Motif-2.png') },
-  { key: "Motif-3", label: "Motif-3", source: require('../../assets/images/themes/Motif-3.png') },
-  { key: "Motif-4", label: "Motif-4", source: require('../../assets/images/themes/Motif-4.png') },
-  { key: "Noir", label: "Noir", source: require('../../assets/images/themes/Noir.png') },
-  { key: "Orange", label: "Orange", source: require('../../assets/images/themes/Orange.png') },
+  { key: "Blanc", label: "Blanc", source: require('../../assets/images/themes/Blanc.jpg') },
+  { key: "Motif-1", label: "Motif-1", source: require('../../assets/images/themes/Motif-1.jpg') },
+  { key: "Motif-2", label: "Motif-2", source: require('../../assets/images/themes/Motif-2.jpg') },
+  { key: "Motif-3", label: "Motif-3", source: require('../../assets/images/themes/Motif-3.jpg') },
+  { key: "Motif-4", label: "Motif-4", source: require('../../assets/images/themes/Motif-4.jpg') },
+  { key: "Noir", label: "Noir", source: require('../../assets/images/themes/Noir.jpg') },
+  { key: "Orange", label: "Orange", source: require('../../assets/images/themes/Orange.jpg') },
 ];
