@@ -9,8 +9,11 @@ export interface ThemeManifestEntry {
 }
 
 export const THEMES: ThemeManifestEntry[] = [
-  { key: "clair", label: "clair", source: require('../../assets/images/themes/clair.png') },
-  { key: "orange", label: "orange", source: require('../../assets/images/themes/orange.png') },
-  { key: "sombre", label: "sombre", source: require('../../assets/images/themes/sombre.png') },
-  { key: "vert", label: "vert", source: require('../../assets/images/themes/vert.png') },
+  { key: "Blanc", label: "Blanc", source: require('../../assets/images/themes/Blanc.png') },
+  { key: "Motif-1", label: "Motif-1", source: require('../../assets/images/themes/Motif-1.png') },
+  { key: "Motif-2", label: "Motif-2", source: require('../../assets/images/themes/Motif-2.png') },
+  { key: "Motif-3", label: "Motif-3", source: require('../../assets/images/themes/Motif-3.png') },
+  { key: "Motif-4", label: "Motif-4", source: require('../../assets/images/themes/Motif-4.png') },
+  { key: "Noir", label: "Noir", source: require('../../assets/images/themes/Noir.png') },
+  { key: "Orange", label: "Orange", source: require('../../assets/images/themes/Orange.png') },
 ];

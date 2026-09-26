@@ -181,7 +181,7 @@ describe('App', () => {
   });
 
   test('applique le thème choisi dans les paramètres, et son changement en direct', async () => {
-    await AsyncStorage.setItem('@boite-a-blek/settings', JSON.stringify({ themeKey: 'orange' }));
+    await AsyncStorage.setItem('@boite-a-blek/settings', JSON.stringify({ themeKey: 'Orange' }));
 
     const { getByTestId, queryByTestId } = await render(<App />);
     await waitFor(() => expect(createAudioPlayer).toHaveBeenCalledTimes(2));

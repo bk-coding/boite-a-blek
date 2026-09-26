@@ -77,9 +77,9 @@ describe('SettingsModal', () => {
       />
     );
 
-    fireEvent.press(getByTestId('theme-option-sombre'));
+    fireEvent.press(getByTestId('theme-option-Noir'));
 
-    expect(onChangeSettings).toHaveBeenCalledWith({ themeKey: 'sombre' });
+    expect(onChangeSettings).toHaveBeenCalledWith({ themeKey: 'Noir' });
   });
 
   test('« Aucun » repasse le thème à null', async () => {
@@ -87,7 +87,7 @@ describe('SettingsModal', () => {
     const { getByTestId } = await render(
       <SettingsModal
         visible
-        settings={{ ...DEFAULT_SETTINGS, themeKey: 'sombre' }}
+        settings={{ ...DEFAULT_SETTINGS, themeKey: 'Noir' }}
         onChangeSettings={onChangeSettings}
         onClose={() => {}}
       />
@@ -102,16 +102,16 @@ describe('SettingsModal', () => {
     const { getByTestId, queryByTestId } = await render(
       <SettingsModal
         visible
-        settings={{ ...DEFAULT_SETTINGS, themeKey: 'orange' }}
+        settings={{ ...DEFAULT_SETTINGS, themeKey: 'Orange' }}
         onChangeSettings={() => {}}
         onClose={() => {}}
       />
     );
 
-    expect(getByTestId('theme-option-orange-check')).toBeTruthy();
+    expect(getByTestId('theme-option-Orange-check')).toBeTruthy();
     expect(queryByTestId('theme-option-none-check')).toBeNull();
-    expect(queryByTestId('theme-option-clair-check')).toBeNull();
-    expect(queryByTestId('theme-option-sombre-check')).toBeNull();
+    expect(queryByTestId('theme-option-Blanc-check')).toBeNull();
+    expect(queryByTestId('theme-option-Noir-check')).toBeNull();
   });
 
   test('bascule la vibration', async () => {
