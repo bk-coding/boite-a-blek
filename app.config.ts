@@ -11,6 +11,12 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: false,
     bundleIdentifier: 'net.agylus.boiteablek',
+    infoPlist: {
+      // L'app n'utilise aucun chiffrement propriétaire (pas de réseau, pas
+      // d'échange de données) : évite une déclaration manuelle à chaque
+      // build dans App Store Connect.
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     package: 'net.agylus.boiteablek',
