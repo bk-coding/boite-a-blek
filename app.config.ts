@@ -56,6 +56,7 @@ const config: ExpoConfig = {
         },
       },
     ],
+    './plugins/withoutActivityRecognition',
   ],
   extra: {
     eas: {
